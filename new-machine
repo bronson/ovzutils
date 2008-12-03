@@ -1,6 +1,8 @@
 #!/usr/bin/perl -w
 
 # quick hack to make creating openvz machines easier
+# USAGE: just run this script: ./new-machine
+
 
 use strict;
 use File::Basename;
