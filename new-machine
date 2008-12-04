@@ -59,8 +59,17 @@ if($name || $nameserver || $diskspace) {
 	$set .= " --save";
 }
 
+
+print "\n";
 print "$create\n";
+print "\n";
 print "$set\n" if $set;
+
+print "\n";
+my $confirm = readln("run command" . ($set ? "s" : "") . " (y/n)?", "n");
+if($confirm eq "y") {
+	run($create) && $set && run($set);
+}
 
 exit 0;
 
@@ -126,5 +135,25 @@ sub readln {
 	$result = $suggestion if $result eq "";
 
 	return $result;
+}
+
+
+sub run {
+	my $cmd = shift;
+	print "Running: $cmd";
+
+	system($cmd);
+	if ($? == -1) {
+		print "failed to execute: $!\n";
+	} elsif ($? & 127) {
+		printf "child died due to signal %d %s coredump\n",
+		       ($? & 127),  ($? & 128) ? 'with' : 'without';
+	} elsif($? != 0) {
+		printf "child exited with value %d\n", $? >> 8;
+	} else {
+		return 1;
+	}
+
+	return undef;
 }
 
