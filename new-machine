@@ -1,7 +1,9 @@
 #!/usr/bin/perl -w
 
-# quick hack to make creating openvz machines easier
+# Quick hack to make creating openvz machines easier
+
 # USAGE: just run this script: ./new-machine
+# It will prompt you for all the information it needs.
 
 
 use strict;
@@ -9,12 +11,20 @@ use File::Basename;
 
 print "\n";
 my @ctids = sort map { basename($_) } </vz/root/*>;
-my $ctid = readif("ctid for the new machine", $ctids[$#ctids] + 1,
-	sub { my $v = shift;
-		return "$_ is already used" if grep { $_ eq $v } @ctids;
-		return "$_ must be larger than 100" if $_ <= 100;
-		return undef;
-	} );
+my $ctid;
+for(;;) {
+	$ctid = readln("ctid for the new machine", $ctids[$#ctids] + 1);
+	if(grep { $_ eq $ctid } @ctids) {
+		print "$ctid is already used";
+	} elsif($ctid <= 100) {
+		print return "$ctid must be larger than 100";
+	} else {
+		last;
+	}
+}
+
+print "\n";
+my $hostname = readln("hostname fqdn");
 
 print "\n";
 my @templates = sort map { basename($_, ".tar.gz") } </vz/template/cache/*>;
@@ -23,9 +33,6 @@ my $template = choose(\@templates, $templates[0]);
 print "\n";
 my @configs = sort map { s/^ve-//; $_ } map { basename($_, ".conf-sample") } </etc/vz/conf/ve-*.conf-sample>;
 my $conf = choose(\@configs, find("basic", @configs));
-
-print "\n";
-my $hostname = readln("hostname fqdn");
 
 print "\n";
 my $ipadd = readln("ip address", "192.168.1.$ctid");
@@ -95,25 +102,12 @@ sub choose {
 		$defnum = $i if defined $default && $choices->[$i-1] eq $default;
 	}
 
-	my $result = readif("select one", $defnum, sub { "Please enter a number from 1 to " . @$choices if !/^\d+$/ || $_ < 1 || $_ > @$choices } );
-
-	return $choices->[$result-1];
-}
-
-
-# if the condition returns a string, then the string is printed
-# and the user is prompted again.
-sub readif {
-	my $prompt = shift;
-	my $suggestion = shift;
-	my $condition = shift;
-
 	for(;;) {
-		my $result = readln($prompt, $suggestion);
-		$_ = $result;
-		my $message = &$condition($result, $suggestion);
-		return $result unless $message;
-		print "$message\n";
+		my $result = readln("select one", $defnum);
+		if($result =~ /^\d+$/ && $result >= 1 && $result <= @$choices) {
+			return $choices->[$result-1];
+		}
+		print "Please enter a number from 1 to " . @$choices;
 	}
 }
 
